@@ -1,4 +1,4 @@
-import React, { useReducer, useContext, useRef, useEffect } from 'react';
+import React, { useReducer, useContext, useRef, useEffect, useMemo } from 'react';
 
 /**
  * Keeps local track between the effect and the Storage Entity they belong to.
@@ -162,7 +162,9 @@ const createStore = systemStorage => {
       const fn = systemStorage.globalEffects[type];
       const key = effectsToStorageEntityMap.get(type);
 
-      return fn && typeof fn === 'function' ? { ...state, [key]: fn(state[key], payload) } : state;
+      return fn && typeof fn === 'function'
+      ? { ...state, [key]: fn(state[key], payload) }
+      : state;
     };
   }
 
@@ -180,10 +182,14 @@ const createStore = systemStorage => {
       console.log(`Current state: `, state);
     }
 
-    dispatch = action => {
-      console.log(`Triggered '${action.type}'.`);
-      _dispatch(action);
-    };
+    // Dispatch needs to be reused to avoid useless re-renders, since it's passed as a prop
+    dispatch = useMemo(
+      () => action => {
+        console.log(`Triggered '${action.type}'.`);
+        _dispatch(action);
+      },
+      [_dispatch]
+    );
   } else {
     dispatch = _dispatch;
   }
